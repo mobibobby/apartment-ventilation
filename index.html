@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Вентиляция в квартире</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: preset strip and step chips, then plan (left) + live readouts (right), then timeline chart and step comparison matrix. Blueprint-like instrument panel. */
+:root{
+  --bg:#ECF0EF; --panel:#F8FAF9; --ink:#14222A; --muted:#5A6A70; --line:#C5CFCE; --wall:#7B8A8D;
+  --accent:#0B7A85; --accent-ink:#FFFFFF; --warn:#B4531A; --good:#2F7D46;
+  --fresh:#119FAB; --room-fresh:#BCE6E5; --room-stale:#E8D3B9; --room-bad:#EBB3A2;
+  --win:#3B82C4; --door:#C2562A; --duct:#D0603A; --boiler:#B7791F;
+  --z-dining:#0B7A85; --z-kitchen:#B4531A; --z-hall:#5F63A0; --z-living:#3B7D3A;
+  --z-bedroom:#9C3D6B; --z-study:#7D6A12; --z-bath:#2F5DA8; --z-laundry:#8A5A2B;
+  --font-ui:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-num:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1618; --panel:#142024; --ink:#E2EBEB; --muted:#8FA2A5; --line:#2A3B3F; --wall:#6E8084;
+  --accent:#36C0CA; --accent-ink:#06282B; --warn:#E58A4E; --good:#6CC38A;
+  --fresh:#3CCAD4; --room-fresh:#17535A; --room-stale:#4D3B28; --room-bad:#6A2C22;
+  --win:#6FA9E6; --door:#E07C55; --duct:#E58A64; --boiler:#E0AB55;
+  --z-dining:#3CC2CC; --z-kitchen:#E58A4E; --z-hall:#A0A4DA; --z-living:#7CC77A;
+  --z-bedroom:#E07FB0; --z-study:#D3BF5A; --z-bath:#7FA6E8; --z-laundry:#C99A6A;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1618; --panel:#142024; --ink:#E2EBEB; --muted:#8FA2A5; --line:#2A3B3F; --wall:#6E8084;
+  --accent:#36C0CA; --accent-ink:#06282B; --warn:#E58A4E; --good:#6CC38A;
+  --fresh:#3CCAD4; --room-fresh:#17535A; --room-stale:#4D3B28; --room-bad:#6A2C22;
+  --win:#6FA9E6; --door:#E07C55; --duct:#E58A64; --boiler:#E0AB55;
+  --z-dining:#3CC2CC; --z-kitchen:#E58A4E; --z-hall:#A0A4DA; --z-living:#7CC77A;
+  --z-bedroom:#E07FB0; --z-study:#D3BF5A; --z-bath:#7FA6E8; --z-laundry:#C99A6A;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:16px;line-height:1.45}
+.wrap{max-width:1200px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+header h1{font-size:32px;font-weight:600;margin:0;letter-spacing:.01em;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:75ch}
+.tag{display:inline-block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:1px 6px;margin-right:8px;vertical-align:2px}
+.bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+.seg button{font:inherit;font-size:15px;border:0;background:transparent;color:var(--ink);padding:7px 11px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:focus-visible,.btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:inherit;font-size:15px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:7px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+select{font:inherit;font-size:15px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;max-width:100%}
+.main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0}
+.plan svg{width:100%;height:auto;display:block}
+.room-name{font-size:13px;fill:var(--muted);font-family:var(--font-ui)}
+.room-val{font-size:19px;fill:var(--ink);font-family:var(--font-num);font-weight:500}
+.small{font-size:11px;fill:var(--muted);font-family:var(--font-ui)}
+.wtag{font-size:11px;fill:var(--fresh);font-family:var(--font-num)}
+.clock{font-family:var(--font-num);font-size:34px;font-weight:500;font-variant-numeric:tabular-nums}
+.run{font-size:17px;font-weight:500}
+.flows{display:grid;gap:6px}
+.flow{display:grid;grid-template-columns:minmax(0,10em) minmax(0,1fr) 4.6em;gap:8px;align-items:center;font-size:14px}
+.flow .track{height:9px;background:var(--bg);border-radius:2px;overflow:hidden}
+.flow .fill{height:100%;background:var(--fresh)}
+.flow .fill.out{background:var(--duct)}
+.flow .v{font-family:var(--font-num);font-size:13px;text-align:right}
+.press{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.press .p{font-family:var(--font-num);font-size:26px}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:14px;color:var(--muted)}
+.stats b{font-family:var(--font-num);font-weight:500;color:var(--ink)}
+.side{display:grid;gap:14px}
+.side h3,.card h2{margin:0 0 6px;font-size:15px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+ul.ins{margin:0;padding-left:18px;display:grid;gap:6px;font-size:15px}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;min-width:760px}
+th,td{padding:6px 7px;text-align:center;border-bottom:1px solid var(--line);font-size:14px}
+th{font-weight:500;color:var(--muted);font-size:13px}
+td.c{font-family:var(--font-num);font-size:13px;color:var(--ink)}
+td.l{text-align:left}
+tr.cur td{box-shadow:inset 0 2px 0 var(--accent),inset 0 -2px 0 var(--accent)}
+tbody tr{cursor:pointer}
+details summary{cursor:pointer;font-weight:500}
+.set{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:10px}
+.set label{display:grid;gap:4px;font-size:14px}
+.note{font-size:14px;color:var(--muted);max-width:95ch}
+.note li{margin-bottom:4px}
+.fan-rotor{transform-box:fill-box;transform-origin:center}
+.fan-on .fan-rotor{animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.fan-on .fan-rotor{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Вентиляция в квартире</h1>
+    <p><span class="tag">Теория</span>Ускоренная модель 4 часов: бризер Tion 4S, вентиляторы ванных, вытяжка Elica и открытые окна. Расчёт по чертежам и паспортам, без замеров. Цвет комнаты показывает, какая доля её воздуха уже заменена уличным.</p>
+  </header>
+
+  <div class="bar">
+    <span class="lbl">Вариант</span>
+    <div class="seg" id="presets" role="tablist" aria-label="Вариант"></div>
+  </div>
+
+  <div class="bar">
+    <span class="lbl">Шаги</span>
+    <div class="seg" id="steps"></div>
+    <button class="btn" id="play" type="button">Пауза</button>
+    <button class="btn ghost" id="restart" type="button">Все шаги с начала</button>
+    <label class="lbl" for="dur">4 часа за</label>
+    <select id="dur"><option value="8">8 с</option><option value="15" selected>15 с</option><option value="30">30 с</option><option value="60">60 с</option></select>
+  </div>
+
+  <div class="card" id="customCard" hidden>
+    <h2>Свой вариант</h2>
+    <div class="set">
+      <label for="cTion">Бризер Tion<select id="cTion"><option value="0">Выключен</option><option value="1">Скорость 1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6 (макс)</option></select></label>
+      <label for="cLite">Бризер Tion Lite (спальня)<select id="cLite"><option value="0">Выключен</option><option value="1">Скорость 1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6 (макс)</option></select></label>
+      <label for="cBath">Вентилятор ванной<select id="cBath"><option value="0">Выключен</option><option value="1">Включён</option></select></label>
+      <label for="cLaundry">Вентилятор постирочной<select id="cLaundry"><option value="0">Выключен</option><option value="1">Включён</option></select></label>
+      <label for="cHood">Вытяжка Elica<select id="cHood"><option value="0">Выключена</option><option value="1">Скорость 1</option><option value="2">2</option><option value="3">3</option></select></label>
+    </div>
+    <div class="set" id="cWins"></div>
+  </div>
+
+  <div class="main">
+    <div class="card plan">
+      <svg id="plan" viewBox="0 0 680 640" role="img" aria-label="План квартиры с потоками воздуха"></svg>
+      <div class="legend" id="planLegend"></div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <div class="clock" id="clock">0:00 / 4:00</div>
+        <div class="run" id="runLabel"></div>
+        <div class="press" style="margin-top:8px"><span class="p" id="pval"></span><span id="pdesc" class="note"></span></div>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="card">
+        <h3>Куда уходит воздух, м³/ч</h3>
+        <div class="flows" id="outFlows"></div>
+        <h3 style="margin-top:12px">Откуда приходит, м³/ч</h3>
+        <div class="flows" id="inFlows"></div>
+      </div>
+      <div class="card">
+        <h3>Что видно</h3>
+        <ul class="ins" id="insights"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card chart">
+    <h2 id="chartTitle">Доля свежего воздуха по комнатам</h2>
+    <svg id="chart" viewBox="0 0 760 250" role="img" aria-label="График по времени"></svg>
+    <div class="legend" id="chartLegend"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="matTitle">Через 4 часа: сравнение шагов</h2>
+    <div class="tblwrap"><table id="matrix"></table></div>
+    <p class="note">Нажмите на строку, чтобы проиграть этот шаг. В подсказке ячейки — время, за которое комната обновилась на 90 %. «Улица» — весь уличный воздух, попадающий в квартиру за час любым путём.</p>
+  </div>
+
+  <div class="card">
+    <details open>
+      <summary>Условия модели</summary>
+      <div class="set">
+        <label for="metric">Показывать<select id="metric"><option value="fresh">Долю свежего воздуха, %</option><option value="co2">CO2, ppm</option></select></label>
+        <label for="people">Люди<select id="people"><option value="none">Никого (как сейчас)</option><option value="night">Ночь: 2 человека в спальне</option><option value="day">День: 1 в кабинете, 2 в гостиной</option></select></label>
+        <label for="bedDoors">Двери спальни и кабинета<select id="bedDoors"><option value="closed">Закрыты</option><option value="open">Открыты</option></select></label>
+        <label for="undercut">Зазор под закрытой дверью: <span id="ucVal" class="num">5 мм</span><input type="range" id="undercut" min="0" max="20" step="1" value="5"></label>
+        <label for="wetDoors">Двери ванной и постирочной<select id="wetDoors"><option value="open">Открыты на 75 %</option><option value="closed">Закрыты</option></select></label>
+        <label for="tight">Герметичность окон и стен<select id="tight"><option value="25">Очень плотно</option><option value="45" selected>Плотно (оценка по CO2)</option><option value="90">Средне</option></select></label>
+        <label for="season">Сезон, внутри +26 °C<select id="season"><option value="0.5|3">Лето, снаружи ≈ +23 °C</option><option value="3|16" selected>Осень, снаружи ≈ +10 °C</option><option value="8|36">Зима, снаружи ≈ −10 °C</option></select></label>
+        <label for="ac">Кондиционеры Ballu, режим вентиляции<select id="ac"><option value="0">Выключены</option><option value="1">Включены (все 4)</option></select></label>
+        <label for="tilt">Штатное «проветрить»: зазор сверху<select id="tilt"><option value="60">60 мм</option><option value="100" selected>100 мм (оценка)</option><option value="140">140 мм</option></select></label>
+      </div>
+    </details>
+  </div>
+
+  <div class="card note">
+    <h2>Допущения</h2>
+    <ul>
+      <li>Tion Lite в спальне, внизу справа от окна. По паспорту: 6 скоростей, максимум 100 м³/ч, нагреватель 1000 Вт, фильтр в воздуховоде G4 или EPA E11, шум до 50 дБА. Расход по скоростям в паспорте не указан; в модели 1 ≈ 20, 2 ≈ 30, 3 ≈ 45, 4 ≈ 60, 5 ≈ 80, 6 ≈ 100 м³/ч — оценка. Расход обоих бризеров падает при противодавлении (в модели до нуля при 80 Па у 4S и 60 Па у Lite, оценка).</li>
+      <li>Tion 4S по скоростям: 1 ≈ 30, 2 ≈ 45, 3 ≈ 65, 4 ≈ 85, 5 ≈ 110, 6 ≈ 140 м³/ч. По паспорту известен только максимум 140 м³/ч.</li>
+      <li>Вентиляторы Latetika Ø100: заявлено «до 120 м³/ч»; в модели до 100 м³/ч в ванной и 80 м³/ч в постирочной, напор до 50 Па. Обратные клапаны слегка пропускают воздух назад при сильном разрежении.</li>
+      <li>Вытяжка Elica Lane (до 1050 м³/ч без сопротивления) работает через короб 60×204 и тройник в канал 15×15. В модели при нулевом давлении: скорость 1 ≈ 180, 2 ≈ 260, 3 ≈ 320 м³/ч, напор до 250 Па. Когда вытяжка работает, клапан кухонной решётки закрыт.</li>
+      <li>Окно: створка 1400×900 мм, у каждой комнаты одно открываемое окно. «Проветрить» — откидывание сверху; площадь щели ≈ зазор × (ширина + высота). «Распахнуть» — вся створка, 1,26 м².</li>
+      <li>Через открытое окно воздух идёт двумя путями: перепад давления (вентиляторы, вытяжка, бризер) и встречный обмен из-за разницы температур (тёплый выходит сверху, холодный входит снизу). Ветер не учтён — при ветре окна дают гораздо больше.</li>
+      <li>Дом новый, окна алюминиевые поворотно-откидные с уплотнителями. Неплотности окон и стен распределены по комнатам по площади наружных стен; общая плотность подобрана под спад CO2 после работы бризера. В новом доме первые 1–2 сезона влажность выше обычной (сохнут стяжка и штукатурка), а холодные алюминиевые рамы зимой могут запотевать — влажность модель не считает.</li>
+      <li>Кухня, столовая, прихожая и гостиная соединены проёмами до потолка и сильно перемешиваются. Двери 800×2300: открытые почти не мешают, закрытые пропускают воздух через зазор.</li>
+      <li>Кондиционеры Ballu BSUI-FM (12HN8 в столовой и гостиной, 09HN8 в спальне и кабинете), 30–50 см под потолком, режим вентиляции. Они только перемешивают воздух и свежего не добавляют. В модели: +150 м³/ч перемешивания между кухней и столовой, по +100 м³/ч между столовой и прихожей и между прихожей и гостиной. Расход блоков по паспорту не проверен.</li>
+      <li>Охлаждение комнат от открытых окон не моделируется. Теплопотери считаются как 0,34 Вт·ч на м³ на градус для всего уличного воздуха; бризер греет свой поток сам, своим нагревателем.</li>
+      <li>Это упрощённая многозонная модель для понимания картины. Реальные цифры покажут замеры.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+"use strict";
+// ---------- model constants (assumptions, listed on the page) ----------
+const TION = [0,30,45,65,85,110,140], TION_PMAX = 80;
+const LITE = [0,20,30,45,60,80,100], LITE_PMAX = 60;
+const HOOD = [0,180,260,320], HOOD_PMAX = 250;
+const FANS = {bath:{Qmax:100, Pmax:50, nominal:120}, laundry:{Qmax:80, Pmax:50, nominal:120}};
+const C_FLAP = 3, P_FLAP = 2, C_REV = 1;     // closed fan flap: opens at ~2 Pa, leaks back slightly
+const C_GRILLE = 10, P_VALVE = 0.5;          // kitchen grille + check valve branch
+const SASH_W = 0.9, SASH_H = 1.4, SASH_A = SASH_W*SASH_H;
+const CO2_OUT = 420, G_PERSON = 0.018;       // m3/h CO2 per resting person
+const ZONES = {
+  dining:{name:"Столовая", V:49.5, env:.14, main:true, win:true},
+  kitchen:{name:"Кухня", V:48, env:.14, main:true, win:true},
+  hall:{name:"Прихожая", V:63, env:.07, main:true},
+  living:{name:"Гостиная", V:72, env:.32, main:true, win:true},
+  bedroom:{name:"Спальня", V:48, env:.18, win:true},
+  study:{name:"Кабинет", V:43.5, env:.15, win:true},
+  bath:{name:"Ванная", V:24, env:0},
+  laundry:{name:"Постирочная", V:19.5, env:0}
+};
+const ZK = Object.keys(ZONES), WZ = ZK.filter(z=>ZONES[z].win);
+const MAIN = ["dining","kitchen","hall","living"], ROOMS = ["bedroom","study","bath","laundry"];
+
+// ---------- presets: each is a sequence of steps ----------
+const all = v => Object.fromEntries(WZ.map(z=>[z,v]));
+const S = (label, o={}) => ({label, tion:0, lite:0, bath:false, laundry:false, hood:0, win:{}, ...o});
+const PRESETS = [
+  {name:"Бризер", steps:[1,3,5,6].map(s=>S(s===6?"макс":String(s),{tion:s}))},
+  {name:"Бризер + ванная", steps:[1,3,5,6].map(s=>S(s===6?"макс":String(s),{tion:s,bath:true}))},
+  {name:"Бризер + постирочная", steps:[1,3,5,6].map(s=>S(s===6?"макс":String(s),{tion:s,laundry:true}))},
+  {name:"Бризер + оба", steps:[1,3,5,6].map(s=>S(s===6?"макс":String(s),{tion:s,bath:true,laundry:true}))},
+  {name:"Бризер в спальне (Lite)", steps:[1,3,5,6].map(s=>S(s===6?"макс":String(s),{lite:s}))},
+  {name:"Оба бризера", steps:[S("4S 3 + Lite 3",{tion:3,lite:3}),S("4S 5 + Lite 5",{tion:5,lite:5}),S("4S макс + Lite макс",{tion:6,lite:6}),S("4S 3 + Lite 3 + ванная",{tion:3,lite:3,bath:true})]},
+  {name:"Без бризера: вентиляторы", steps:[S("ванная",{bath:true}),S("постирочная",{laundry:true}),S("оба",{bath:true,laundry:true})]},
+  {name:"Вытяжка Elica", steps:[S("1",{hood:1}),S("2",{hood:2}),S("3",{hood:3}),S("3 + окно кухни 30 мм",{hood:3,win:{kitchen:30}})]},
+  {name:"Окна «проветрить»", steps:[S("10 мм",{win:all(10)}),S("20 мм",{win:all(20)}),S("30 мм",{win:all(30)}),S("штатно",{win:all("tilt")})]},
+  {name:"Окна + оба вентилятора", steps:[S("10 мм",{win:all(10),bath:true,laundry:true}),S("20 мм",{win:all(20),bath:true,laundry:true}),S("30 мм",{win:all(30),bath:true,laundry:true})]},
+  {name:"Свой вариант", custom:true, steps:[]}
+];
+
+const spow = (x,n) => Math.sign(x)*Math.pow(Math.abs(x),n);
+const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+function bisect(f, lo, hi){ let a=lo,b=hi; for(let i=0;i<70;i++){ const m=(a+b)/2; if(f(m)>0) a=m; else b=m; } return (a+b)/2; }
+
+// ---------- steady pressures and flows ----------
+function solve(cfg){
+  const {Qset, Q2set, Ce, ps, dT, u, bedOpen, wetOpen, bath, laundry, hood, win, tilt, ac} = cfg;
+  const tionQ = P => Qset ? clamp(Qset*(1-P/TION_PMAX),0,Qset*1.1) : 0;
+  const liteQ = p => Q2set ? clamp(Q2set*(1-p/LITE_PMAX),0,Q2set*1.1) : 0;
+  const undA = 0.8*u/1000 + 0.0015;
+  const Cd = a => 2790*a;                       // m3/h per Pa^0.5 (Cd=0.6, rho=1.2)
+  const doorC = {bedroom:Cd(bedOpen?1.84:undA), study:Cd(bedOpen?1.84:undA), bath:Cd(wetOpen?1.38:undA), laundry:Cd(wetOpen?1.38:undA)};
+  const winA = z => { const w=win[z]; if(!w) return 0; if(w==="open") return SASH_A; const g=(w==="tilt"?tilt:w)/1000; return Math.min(SASH_A, g*(SASH_W+SASH_H)); };
+  const envQ = (z,p) => Ce*ZONES[z].env*spow(p,0.65);
+  const winQ = (z,p) => Cd(winA(z))*spow(p,0.5);
+  const zoneOut = (z,p) => envQ(z,p) + winQ(z,p);
+  const fanQ = (f,p) => clamp(f.Qmax*(1-(-ps-p)/f.Pmax), 0, f.Qmax*1.15);
+  const flapQ = p => { const x=p+ps; return x>P_FLAP ? C_FLAP*Math.sqrt(x-P_FLAP) : (x<0 ? -C_REV*Math.sqrt(-x) : 0); };
+  const out = {bedroom:p=>zoneOut("bedroom",p), study:p=>zoneOut("study",p), bath:p=>bath?fanQ(FANS.bath,p):flapQ(p), laundry:p=>laundry?fanQ(FANS.laundry,p):flapQ(p)};
+  const grille = P => hood ? 0 : C_GRILLE*Math.sqrt(Math.max(0,P+ps-P_VALVE));
+  const hoodQ = P => hood ? clamp(HOOD[hood]*(1-(-P)/HOOD_PMAX),0,HOOD[hood]*1.2) : 0;
+  const sup2 = (r,p) => r==="bedroom" ? liteQ(p) : 0;
+  const roomP = (r,P) => bisect(p => doorC[r]*spow(P-p,0.5) + sup2(r,p) - out[r](p), -800, 800);
+  const bal = P => { let s=tionQ(P)-grille(P)-hoodQ(P); for(const z of MAIN) s-=zoneOut(z,P); for(const r of ROOMS){ const p=roomP(r,P); s-=doorC[r]*spow(P-p,0.5);} return s; };
+  const P = bisect(bal, -800, 800);
+  const Q = tionQ(P);
+  const pr = {}; for(const z of MAIN) pr[z]=P; for(const r of ROOMS) pr[r]=roomP(r,P);
+  const env={}, wf={}, xch={};
+  const buoy = Math.sqrt(9.81*SASH_H*Math.max(dT,0)/290);  // m/s, single-sided stack exchange
+  for(const z of ZK){ env[z]=ZONES[z].env?envQ(z,pr[z]):0; wf[z]=ZONES[z].win?winQ(z,pr[z]):0; xch[z]=0.6*winA(z)/3*buoy*3600; }
+  const door = {}; for(const r of ROOMS) door[r]=doorC[r]*spow(P-pr[r],0.5);
+  const Q2 = liteQ(pr.bedroom);
+  const shaft = {kitchen:grille(P), hood:hoodQ(P), bath:out.bath(pr.bath), laundry:out.laundry(pr.laundry)};
+  const dk = env.kitchen+wf.kitchen+shaft.kitchen+shaft.hood, hl = env.living+wf.living, dh = Q-env.dining-wf.dining-dk;
+  const edges = [["dining","kitchen",dk],["dining","hall",dh],["hall","living",hl],["hall","bedroom",door.bedroom],["hall","study",door.study],["hall","bath",door.bath],["hall","laundry",door.laundry]];
+  const Eb = bedOpen?60:1+0.3*u, Ew = wetOpen?60:1+0.3*u;
+  const A = ac ? 1 : 0;
+  const mix = [["dining","kitchen",250+150*A],["dining","hall",150+100*A],["hall","living",100+100*A],["hall","bedroom",Eb],["hall","study",Eb],["hall","bath",Ew],["hall","laundry",Ew]];
+  const pos = o => ZK.reduce((s,z)=>s+Math.max(0,o[z]),0), neg = o => ZK.reduce((s,z)=>s+Math.max(0,-o[z]),0);
+  const back = Math.max(0,-shaft.bath)+Math.max(0,-shaft.laundry);
+  const xTot = ZK.reduce((s,z)=>s+xch[z],0);
+  const outdoorIn = Q + Q2 + neg(env) + neg(wf) + back + xTot;
+  return {Q, Q2, Qset, Q2set, P, pr, env, wf, xch, door, shaft, edges, mix, dk, dh, hl, winA:Object.fromEntries(ZK.map(z=>[z,winA(z)])),
+    envOut:pos(env), envIn:neg(env), winOut:pos(wf), winIn:neg(wf), back, xTot, outdoorIn, heatW:0.34*(outdoorIn-Q-Q2)*dT, tionHeatW:0.34*(Q+Q2)*dT};
+}
+
+// ---------- 4-hour transport of a tracer (fresh share or CO2) ----------
+function simulate(fl, metric, people){
+  const G = Object.fromEntries(ZK.map(z=>[z,0]));
+  if(people==="night") G.bedroom = 2*G_PERSON;
+  if(people==="day"){ G.study = G_PERSON*1.1; G.living = 2*G_PERSON*1.1; }
+  const fresh = metric==="fresh", cout = fresh?1:CO2_OUT;
+  const c = Object.fromEntries(ZK.map(z=>[z, fresh?0:CO2_OUT]));
+  const dt = 1/240, steps = 960, every = 4, samples = [{...c}];
+  for(let s=1;s<=steps;s++){
+    const d = Object.fromEntries(ZK.map(z=>[z,0]));
+    d.dining += fl.Q*cout; d.bedroom += fl.Q2*cout;
+    for(const [a,b,q] of fl.edges){ if(q>=0){ d[b]+=q*c[a]; d[a]-=q*c[a]; } else { d[a]+=-q*c[b]; d[b]-=-q*c[b]; } }
+    for(const z of ZK){
+      for(const e of [fl.env[z], fl.wf[z]]){ if(e>=0) d[z]-=e*c[z]; else d[z]+=-e*cout; }
+      d[z] += fl.xch[z]*(cout-c[z]);
+    }
+    d.kitchen -= (fl.shaft.kitchen+fl.shaft.hood)*c.kitchen;
+    for(const k of ["bath","laundry"]){ const q=fl.shaft[k]; if(q>=0) d[k]-=q*c[k]; else d[k]+=-q*cout; }
+    for(const [a,b,E] of fl.mix){ const x=E*(c[b]-c[a]); d[a]+=x; d[b]-=x; }
+    if(!fresh) for(const z of ZK) d[z] += G[z]*1e6;
+    for(const z of ZK) c[z] += d[z]/ZONES[z].V*dt;
+    if(s%every===0) samples.push({...c});
+  }
+  return samples;
+}
+function t90(samples, z){ for(let i=0;i<samples.length;i++) if(samples[i][z]>=0.9) return i/60; return null; }
+
+// ---------- UI state ----------
+const $ = id => document.getElementById(id);
+const st = {preset:0, idx:0, t:0, playing:true, seqMode:true, runs:[], pauseLeft:0};
+function steps(){ const p=PRESETS[st.preset]; return p.custom ? [customStep()] : p.steps; }
+function customStep(){
+  const win={}; for(const z of WZ){ const v=$("cw_"+z).value; if(v!=="0") win[z]= (v==="tilt"||v==="open")?v:+v; }
+  return S("свой",{tion:+$("cTion").value, lite:+$("cLite").value, bath:$("cBath").value==="1", laundry:$("cLaundry").value==="1", hood:+$("cHood").value, win});
+}
+function cfgFor(step){
+  const [ps,dT]=$("season").value.split("|").map(Number);
+  return {Qset:TION[step.tion], Q2set:LITE[step.lite], Ce:+$("tight").value, ps, dT, u:+$("undercut").value, tilt:+$("tilt").value,
+    bedOpen:$("bedDoors").value==="open", wetOpen:$("wetDoors").value==="open",
+    bath:step.bath, laundry:step.laundry, hood:step.hood, win:step.win, ac:$("ac").value==="1"};
+}
+function rebuild(){
+  const metric=$("metric").value, people=$("people").value;
+  st.runs = steps().map(step => { const fl=solve(cfgFor(step)); return {step, fl, samples:simulate(fl,metric,people), fresh:metric==="fresh"?null:simulate(fl,"fresh",people)}; });
+  st.idx = Math.min(st.idx, st.runs.length-1);
+  buildSteps(); buildMatrix(); updateStatic(); drawChartBase();
+}
+
+// ---------- colors ----------
+let COL = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  for(const k of ["room-fresh","room-stale","room-bad","fresh","warn"]) COL[k]=cs.getPropertyValue("--"+k).trim();
+}
+const hex2 = h => { h=h.replace("#",""); if(h.length===3) h=h.split("").map(x=>x+x).join(""); return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); };
+const mixc = (a,b,t) => { const A=hex2(a),B=hex2(b); t=clamp(t,0,1); return "rgb("+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(",")+")"; };
+const isFresh = () => $("metric").value==="fresh";
+function roomColor(v){
+  if(isFresh()) return mixc(COL["room-stale"],COL["room-fresh"],v);
+  return v<=900 ? mixc(COL["room-fresh"],COL["room-stale"],(v-420)/480) : mixc(COL["room-stale"],COL["room-bad"],(v-900)/500);
+}
+function dotColor(v){ return isFresh() ? mixc(COL.warn,COL.fresh,v) : (v<=900 ? mixc(COL.fresh,COL.warn,(v-420)/480) : COL.warn); }
+const fmtV = v => isFresh() ? Math.round(v*100)+"%" : Math.round(v)+"";
+const nf = (x,d=0) => x.toLocaleString("ru-RU",{maximumFractionDigits:d,minimumFractionDigits:d});
+const hm = h => { const m=Math.round(h*60); return Math.floor(m/60)+":"+String(m%60).padStart(2,"0"); };
+const winLabel = w => w==="open"?"распахнуто":w==="tilt"?"проветр.":w+" мм";
+
+// ---------- plan drawing ----------
+const NS="http://www.w3.org/2000/svg";
+const el = (tag, attrs={}, parent) => { const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; };
+const SHAPES = {
+  bedroom:"40,40 235,40 235,252 40,252", bath:"40,262 170,262 170,400 40,400",
+  dining:"240,40 412,40 412,290 240,290", kitchen:"418,40 585,40 585,290 418,290",
+  study:"40,410 235,410 235,605 40,605", laundry:"525,355 655,355 655,490 525,490",
+  hall:"176,296 520,296 520,400 305,400 305,445 240,445 240,400 176,400",
+  living:"240,445 520,445 520,490 655,490 655,605 240,605"
+};
+const LABEL = {bedroom:[137,130], bath:[118,300], dining:[290,110], kitchen:[480,110], study:[137,520], laundry:[600,382], hall:[440,345], living:[410,560]};
+const WIN = {bedroom:[85,165,40], dining:[262,362,40], kitchen:[430,532,40], study:[95,165,605], living:[268,372,605]};
+const PATHS = {
+  supply:[[385,4],[385,48],[372,110],[330,170]], supply2:[[192,4],[192,48],[178,110],[150,160]],
+  dk:[[330,175],[400,188],[470,200]], dh:[[330,180],[340,240],[346,290],[350,330]],
+  hl:[[350,335],[272,380],[272,445],[300,500],[350,545]],
+  hb:[[330,320],[209,302],[209,252],[160,190]], hs:[[330,345],[209,388],[209,410],[150,480]],
+  hba:[[320,330],[240,350],[170,355],[118,362]], hla:[[420,345],[500,400],[525,415],[568,432]],
+  kgr:[[470,205],[531,236],[572,236],[573,276]], hood:[[480,185],[556,176],[572,194],[573,276]],
+  sbath:[[118,362],[80,364],[57,383]], slaundry:[[568,432],[586,440],[641,422]],
+  e_bedroom:[[150,170],[140,48],[140,22]], e_dining:[[290,160],[290,48],[290,22]], e_kitchen:[[480,190],[480,48],[480,22]],
+  e_study:[[130,500],[140,600],[140,628]], e_living:[[380,550],[340,600],[340,628]], e_living2:[[560,540],[593,600],[593,628]], e_hall:[[470,360],[515,330],[540,322]],
+  w_bedroom:[[115,170],[110,48],[110,22]], w_dining:[[315,160],[315,48],[315,22]], w_kitchen:[[505,190],[505,48],[505,22]],
+  w_study:[[115,500],[120,600],[120,628]], w_living:[[300,550],[305,600],[305,628]]
+};
+let partsG, roomEls={}, valEls={}, fanEls={}, winEls={}, winTxt={}, tionTxt, liteTxt, liteRect, hoodRect, hoodTxt, acEls=[];
+function drawPlan(){
+  const s=$("plan"); s.innerHTML="";
+  const t = (x,y,txt,cls,anchor="middle") => { const e=el("text",{x,y,class:cls,"text-anchor":anchor},s); e.textContent=txt; return e; };
+  for(const z of ZK) roomEls[z]=el("polygon",{points:SHAPES[z],stroke:"var(--wall)","stroke-width":1.2,fill:"var(--room-stale)"},s);
+  el("line",{x1:415,y1:60,x2:415,y2:290,stroke:"var(--wall)","stroke-width":1,"stroke-dasharray":"3 4"},s);
+  el("line",{x1:283,y1:291,x2:410,y2:291,stroke:"var(--fresh)","stroke-width":3.5},s);
+  el("line",{x1:242,y1:445,x2:303,y2:445,stroke:"var(--fresh)","stroke-width":3.5},s);
+  for(const [x1,x2,y] of [[85,165,40],[262,362,40],[430,532,40],[95,165,605],[268,372,605],[452,500,605],[555,632,605]]) el("line",{x1,y1:y,x2,y2:y,stroke:"var(--win)","stroke-width":5},s);
+  for(const z of WZ){ const [x1,x2,y]=WIN[z]; winEls[z]=el("line",{x1,y1:y,x2,y2:y,stroke:"var(--fresh)","stroke-width":8,opacity:0},s); winTxt[z]=t((x1+x2)/2, y<100?y+16:y-8, "", "wtag"); }
+  for(const d of [[190,252,228,252],[190,410,228,410],[170,335,170,375],[525,395,525,435]]) el("line",{x1:d[0],y1:d[1],x2:d[2],y2:d[3],stroke:"var(--door)","stroke-width":2.5,"stroke-dasharray":"3 2"},s);
+  el("rect",{x:366,y:46,width:38,height:22,rx:4,fill:"var(--panel)",stroke:"var(--fresh)","stroke-width":1.5},s); tionTxt=t(385,61,"Tion","small");
+  liteRect=el("rect",{x:172,y:46,width:40,height:22,rx:4,fill:"var(--panel)",stroke:"var(--fresh)","stroke-width":1.5,"stroke-dasharray":"3 2"},s); liteTxt=t(192,61,"Lite","small");
+  el("rect",{x:563,y:268,width:20,height:20,rx:3,fill:"var(--panel)",stroke:"var(--duct)","stroke-width":1.4},s);
+  el("rect",{x:523,y:228,width:16,height:16,rx:2,fill:"var(--panel)",stroke:"var(--duct)","stroke-width":1.2},s);
+  el("path",{d:"M539 236 L569 236 M572 192 L572 266",stroke:"var(--duct)","stroke-width":2.5,fill:"none",opacity:.55},s);
+  hoodRect=el("rect",{x:557,y:162,width:26,height:28,rx:3,fill:"var(--panel)",stroke:"var(--wall)","stroke-width":1.2},s); hoodTxt=t(570,156,"Elica выкл.","small");
+  el("rect",{x:569,y:104,width:14,height:24,rx:2,fill:"var(--panel)",stroke:"var(--boiler)","stroke-width":1.2},s);
+  el("rect",{x:46,y:372,width:22,height:22,rx:3,fill:"var(--panel)",stroke:"var(--duct)","stroke-width":1.4},s);
+  el("rect",{x:630,y:411,width:22,height:22,rx:3,fill:"var(--panel)",stroke:"var(--duct)","stroke-width":1.4},s);
+  for(const [k,cx,cy] of [["bath",80,364],["laundry",586,440]]){
+    const g=el("g",{},s); el("circle",{cx,cy,r:9,fill:"var(--panel)",stroke:"var(--duct)","stroke-width":1.4},g);
+    el("path",{d:`M${cx-6} ${cy} L${cx+6} ${cy} M${cx} ${cy-6} L${cx} ${cy+6}`,stroke:"var(--duct)","stroke-width":1.6,class:"fan-rotor"},g);
+    fanEls[k]=g;
+  }
+  acEls = [[398,70,12,40],[185,236,40,12],[185,414,40,12],[456,449,40,12]].map(([x,y,w,h])=>el("rect",{x,y,width:w,height:h,rx:2,fill:"var(--panel)",stroke:"var(--z-hall)","stroke-width":1.2},s));
+  t(600,22,"Север","small"); t(600,634,"Юг","small");
+  t(574,302,"кухонный канал","small"); t(58,415,"канал","small");
+  partsG = el("g",{},s);
+  for(const z of ZK){ const [x,y]=LABEL[z]; t(x,y,ZONES[z].name,"room-name"); valEls[z]=t(x,y+22,"","room-val"); }
+  $("planLegend").innerHTML = `<span><i style="background:var(--room-stale);height:12px"></i>старый воздух</span><span><i style="background:var(--room-fresh);height:12px"></i>свежий</span><span><i style="background:var(--fresh)"></i>проём / открытое окно</span><span><i style="background:var(--door)"></i>дверь 800×2300</span><span><i style="background:var(--win)"></i>окно</span><span><i style="background:var(--z-hall)"></i>кондиционер</span><span>точки — движение воздуха, цвет = его свежесть</span>`;
+}
+
+// ---------- particles ----------
+const EDGEP = {};
+function prepPath(pts){ const L=[0]; for(let i=1;i<pts.length;i++) L.push(L[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])); return {pts,L,len:L[L.length-1]}; }
+function at(p,d){ d=clamp(d,0,p.len); let i=1; while(i<p.L.length-1 && p.L[i]<d) i++; const a=p.pts[i-1],b=p.pts[i],seg=p.L[i]-p.L[i-1]||1,k=(d-p.L[i-1])/seg; return [a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k]; }
+function edgeDefs(run){
+  const f=run.fl, E=(key,path,from,to,q)=>({key,path,from,to,q});
+  const L=[
+    E("supply","supply","out","dining",f.Q), E("supply2","supply2","out","bedroom",f.Q2), E("dk","dk","dining","kitchen",f.dk), E("dh","dh","dining","hall",f.dh), E("hl","hl","hall","living",f.hl),
+    E("hb","hb","hall","bedroom",f.door.bedroom), E("hs","hs","hall","study",f.door.study), E("hba","hba","hall","bath",f.door.bath), E("hla","hla","hall","laundry",f.door.laundry),
+    E("kgr","kgr","kitchen","out",f.shaft.kitchen), E("hood","hood","kitchen","out",f.shaft.hood), E("sbath","sbath","bath","out",f.shaft.bath), E("slaundry","slaundry","laundry","out",f.shaft.laundry),
+    E("e_bedroom","e_bedroom","bedroom","out",f.env.bedroom), E("e_dining","e_dining","dining","out",f.env.dining), E("e_kitchen","e_kitchen","kitchen","out",f.env.kitchen),
+    E("e_study","e_study","study","out",f.env.study), E("e_living","e_living","living","out",f.env.living/2), E("e_living2","e_living2","living","out",f.env.living/2), E("e_hall","e_hall","hall","out",f.env.hall)
+  ];
+  for(const z of WZ){ L.push(E("w_"+z,"w_"+z,z,"out",f.wf[z])); if(f.xch[z]>0.5){ L.push(E("xo_"+z,"w_"+z,z,"out",f.xch[z]/2)); L.push(E("xi_"+z,"w_"+z,z,"out",-f.xch[z]/2)); } }
+  return L;
+}
+let parts=[], acc={}, pool=[];
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function stepParticles(dtReal, run, conc){
+  if(reduceMotion.matches){ for(const c of pool) c.setAttribute("r",0); return; }
+  const defs=edgeDefs(run);
+  for(const e of defs){
+    const q=Math.abs(e.q); if(q<0.6) continue;
+    acc[e.key]=(acc[e.key]||0)+Math.min(q,260)*dtReal*0.075;
+    if(!EDGEP[e.path]) EDGEP[e.path]=prepPath(PATHS[e.path]);
+    while(acc[e.key]>=1){ acc[e.key]-=1; if(parts.length<520) parts.push({key:e.key,path:e.path,d:0,rev:e.q<0,src:e.q<0?e.to:e.from,sp:22+95*Math.sqrt(Math.min(q,260)/140)}); }
+  }
+  const qmap=Object.fromEntries(defs.map(e=>[e.key,e]));
+  parts = parts.filter(pt => { const e=qmap[pt.key]; if(!e||Math.abs(e.q)<0.6||((e.q<0)!==pt.rev)) return false; pt.d+=pt.sp*dtReal; return pt.d<=EDGEP[pt.path].len; });
+  while(pool.length<parts.length) pool.push(el("circle",{r:2.6},partsG));
+  for(let i=0;i<pool.length;i++){
+    const c=pool[i];
+    if(i>=parts.length){ c.setAttribute("r",0); continue; }
+    const pt=parts[i], P=EDGEP[pt.path], xy=at(P, pt.rev?P.len-pt.d:pt.d);
+    const v = pt.src==="out" ? (isFresh()?1:CO2_OUT) : conc[pt.src];
+    c.setAttribute("cx",xy[0].toFixed(1)); c.setAttribute("cy",xy[1].toFixed(1)); c.setAttribute("r",2.6); c.setAttribute("fill",dotColor(v));
+  }
+}
+
+// ---------- readouts ----------
+function describe(step){
+  const p=[];
+  p.push(step.tion?`Tion 4S ${step.tion===6?"макс":step.tion} (≈${TION[step.tion]} м³/ч)`:"Tion 4S выкл.");
+  if(step.lite) p.push(`Lite ${step.lite===6?"макс":step.lite} (≈${LITE[step.lite]} м³/ч)`);
+  if(step.bath) p.push("вент. ванной"); if(step.laundry) p.push("вент. постирочной");
+  if(step.hood) p.push(`Elica ${step.hood}`);
+  const w=Object.entries(step.win); if(w.length){ const vals=[...new Set(w.map(x=>winLabel(x[1])))]; p.push(w.length===WZ.length?`все окна: ${vals.join("/")}`:`окна: ${w.map(([z,v])=>ZONES[z].name.toLowerCase()+" "+winLabel(v)).join(", ")}`); }
+  return p.join(" · ");
+}
+function updateStatic(){
+  const run=st.runs[st.idx], f=run.fl, step=run.step, [,dT]=$("season").value.split("|").map(Number);
+  $("runLabel").textContent = `${PRESETS[st.preset].name} · ${describe(step)}`;
+  $("pval").textContent = (f.P>=0?"+":"−")+nf(Math.abs(f.P),1)+" Па";
+  $("pval").style.color = f.P>=0 ? "var(--accent)" : "var(--warn)";
+  $("pdesc").textContent = Math.abs(f.P)<0.3 ? "давление почти как на улице" : f.P>0 ? "подпор: квартира выдавливает воздух наружу" : "разрежение: воздух подсасывается снаружи";
+  $("stats").innerHTML = `<span>Уличного воздуха: <b>${nf(f.outdoorIn)} м³/ч</b></span><span>Обмен квартиры: <b>${nf(f.outdoorIn/367,2)} раз/ч</b></span>`+(dT>0?`<span>Теплопотери: <b>${nf(f.heatW)} Вт</b>${(f.Q+f.Q2)?` + бризеры греют ≈ ${nf(f.tionHeatW)} Вт`:""}</span>`:"");
+  const outs=[{n:"Щели окон и стен",v:f.envOut},{n:"Открытые окна",v:f.winOut+f.xTot},{n:"Кухонная решётка",v:f.shaft.kitchen},{n:"Вытяжка Elica",v:f.shaft.hood},{n:"Канал ванной",v:Math.max(0,f.shaft.bath)},{n:"Канал постирочной",v:Math.max(0,f.shaft.laundry)}].filter(o=>o.v>=0.5||["Щели окон и стен","Кухонная решётка"].includes(o.n));
+  const ins=[{n:"Бризер Tion 4S",v:f.Q},{n:"Бризер Lite (спальня)",v:f.Q2},{n:"Щели окон и стен",v:f.envIn},{n:"Открытые окна",v:f.winIn+f.xTot},{n:"Обратно из каналов",v:f.back}].filter(o=>o.v>=0.5||o.n==="Бризер Tion 4S");
+  const max=Math.max(...outs.map(o=>o.v),...ins.map(o=>o.v),1);
+  const row=(o,cls)=>`<div class="flow"><span>${o.n}</span><span class="track"><span class="fill ${cls}" style="display:block;width:${(o.v/max*100).toFixed(1)}%"></span></span><span class="v">${nf(o.v)}</span></div>`;
+  $("outFlows").innerHTML = outs.map(o=>row(o,"out")).join(""); $("inFlows").innerHTML = ins.map(o=>row(o,"")).join("");
+  const acOn=$("ac").value==="1"; for(const r of acEls) r.setAttribute("fill", acOn?"var(--z-hall)":"var(--panel)");
+  fanEls.bath.classList.toggle("fan-on",step.bath); fanEls.laundry.classList.toggle("fan-on",step.laundry);
+  tionTxt.textContent = step.tion ? "Tion "+(step.tion===6?"макс":step.tion) : "Tion выкл";
+  liteTxt.textContent = step.lite ? "Lite "+(step.lite===6?"макс":step.lite) : "Lite выкл"; liteRect.setAttribute("stroke-dasharray", step.lite?"":"3 2");
+  hoodRect.setAttribute("fill", step.hood?"var(--duct)":"var(--panel)"); hoodTxt.textContent = step.hood?`Elica ${step.hood}`:"Elica выкл.";
+  for(const z of WZ){ const w=step.win[z]; winEls[z].setAttribute("opacity", w?1:0); winTxt[z].textContent = w?winLabel(w):""; }
+  // insights
+  const L=[], tot=Math.max(f.outdoorIn,1), pct=v=>Math.round(v/tot*100);
+  if(f.Q2set){
+    const pb=f.pr.bedroom, lost=f.Q2set-f.Q2;
+    L.push(`Lite в спальне: ${nf(f.Q2)} м³/ч${lost>3?` из ${f.Q2set} — противодавление ${nf(pb,1)} Па срезает расход`:""}. Из спальни воздух уходит ${f.door.bedroom<0?`в прихожую (${nf(-f.door.bedroom)} м³/ч)`:""}${f.env.bedroom>0.5?` и через щели её окна (${nf(f.env.bedroom)} м³/ч)`:""}.`);
+    if($("bedDoors").value==="closed" && pb>5) L.push(`С закрытой дверью и зазором ${$("undercut").value} мм воздуху из спальни некуда деться: нужен зазор 15–20 мм или переточная решётка, иначе Lite работает вполсилы.`);
+  }
+  if(f.Qset && f.Qset-f.Q>3) L.push(`Tion 4S даёт ${nf(f.Q)} м³/ч из ${f.Qset}: мешает подпор в квартире.`);
+  if(f.P>0.3) L.push(`Подпор ${nf(f.P,1)} Па. Больше всего воздуха (${Math.round(f.envOut/Math.max(f.Q+f.Q2,1)*100)}% подачи бризеров) выходит через неплотности окон и стен.`);
+  if(f.P<-0.3) L.push(`Разрежение ${nf(-f.P,1)} Па: вытяжка сильнее притока. ${nf(f.envIn+f.winIn)} м³/ч подсасывается через щели${f.winIn>0.5?" и открытые окна":""}.`);
+  if(f.envIn>5) L.push(`${pct(f.envIn)}% уличного воздуха идёт через щели мимо фильтров бризера, зимой — без подогрева.`);
+  if(f.shaft.hood>0){ L.push(`Вытяжка реально тянет ≈${nf(f.shaft.hood)} м³/ч (без сопротивления ${HOOD[step.hood]}+ и до 1050 по паспорту).`); if(!Object.keys(step.win).length && !step.tion) L.push("Без открытого окна вытяжке не хватает притока: квартира уходит в сильное разрежение, и вытяжка работает вполсилы."); }
+  if(f.back>0.5) L.push(`Обратная тяга: ≈${nf(f.back,1)} м³/ч заходит в квартиру через закрытые вентиляторы ванных. При сильном разрежении это может приносить запах из канала.`);
+  if(f.shaft.kitchen<0.5 && !step.hood) L.push("Клапан кухонной решётки закрыт: при разрежении кухня не вытягивается через канал.");
+  for(const [k,nm] of [["bath","ванной"],["laundry","постирочной"]]) if(step[k]) L.push(`Вентилятор ${nm} реально даёт ≈${nf(f.shaft[k])} м³/ч (заявлено до ${FANS[k].nominal}).`);
+  if(f.xTot>1) L.push(`Открытые окна дают ≈${nf(f.xTot)} м³/ч встречного обмена от разницы температур${dT<5?" — летом почти ничего, нужен ветер или вентилятор":""}. Ветер не учтён.`);
+  if(acOn) L.push("Кондиционеры в режиме вентиляции перемешивают воздух в открытых зонах и внутри комнат, но свежего не добавляют. В закрытых спальне и кабинете обмен через дверь они не меняют.");
+  if($("bedDoors").value==="closed" && !step.win.bedroom) L.push(`Через закрытую дверь спальни идёт ${nf(Math.abs(f.door.bedroom),1)} м³/ч (зазор ${$("undercut").value} мм).`);
+  const fr=run.fresh||run.samples, end=fr[fr.length-1], worst=ZK.slice().sort((a,b)=>end[a]-end[b])[0];
+  L.push(`Медленнее всех обновляется: ${ZONES[worst].name.toLowerCase()} — ${Math.round(end[worst]*100)}% свежего воздуха через 4 часа.`);
+  if(!isFresh()){ const s=run.samples[run.samples.length-1], hi=ZK.slice().sort((a,b)=>s[b]-s[a])[0]; L.push(`Максимум CO2 через 4 часа: ${ZONES[hi].name.toLowerCase()} ≈ ${Math.round(s[hi])} ppm.`); }
+  $("insights").innerHTML = L.map(x=>`<li>${x}</li>`).join("");
+  for(const [i,b] of [...$("steps").children].entries()) b.setAttribute("aria-pressed", String(i===st.idx));
+  for(const tr of $("matrix").querySelectorAll("tbody tr")) tr.classList.toggle("cur", +tr.dataset.i===st.idx);
+}
+
+// ---------- chart ----------
+const CH={x0:46,x1:740,y0:16,y1:214};
+let chartLines={}, playhead, chartMax=1000;
+function yScale(v){ const lo=isFresh()?0:400, hi=isFresh()?1:chartMax; return CH.y1-(v-lo)/(hi-lo)*(CH.y1-CH.y0); }
+function drawChartBase(){
+  const s=$("chart"); s.innerHTML=""; chartLines={};
+  const fresh=isFresh();
+  $("chartTitle").textContent = fresh ? "Доля свежего воздуха по комнатам" : "CO2 по комнатам, ppm";
+  if(!fresh) chartMax = Math.max(1000, Math.ceil(Math.max(...st.runs.flatMap(r=>r.samples.map(x=>Math.max(...ZK.map(z=>x[z])))))/200)*200);
+  const ticks = fresh ? [0,.25,.5,.75,1] : Array.from({length:Math.round((chartMax-400)/200)+1},(_,i)=>400+i*200);
+  for(const v of ticks){ const y=yScale(v); el("line",{x1:CH.x0,x2:CH.x1,y1:y,y2:y,stroke:"var(--line)","stroke-width":1},s); const tx=el("text",{x:CH.x0-6,y:y+4,"text-anchor":"end",class:"small"},s); tx.textContent = fresh?Math.round(v*100)+"%":v; }
+  for(let h=0;h<=4;h++){ const x=CH.x0+(CH.x1-CH.x0)*h/4; const tx=el("text",{x,y:CH.y1+18,"text-anchor":"middle",class:"small"},s); tx.textContent=h+" ч"; }
+  if(fresh){ const y=yScale(.9); el("line",{x1:CH.x0,x2:CH.x1,y1:y,y2:y,stroke:"var(--accent)","stroke-dasharray":"4 4","stroke-width":1},s); const tx=el("text",{x:CH.x1,y:y-4,"text-anchor":"end",class:"small"},s); tx.textContent="90%"; }
+  for(const z of ZK) chartLines[z]=el("polyline",{fill:"none",stroke:`var(--z-${z})`,"stroke-width":z==="bedroom"||z==="living"?2.4:1.6,"stroke-linejoin":"round"},s);
+  playhead=el("line",{y1:CH.y0,y2:CH.y1,stroke:"var(--ink)","stroke-width":1,opacity:.5},s);
+  $("chartLegend").innerHTML = ZK.map(z=>`<span><i style="background:var(--z-${z})"></i>${ZONES[z].name}</span>`).join("");
+}
+function drawChart(){
+  const run=st.runs[st.idx], n=Math.min(run.samples.length-1, Math.floor(st.t*60));
+  for(const z of ZK){ const pts=[]; for(let i=0;i<=n;i++) pts.push((CH.x0+(CH.x1-CH.x0)*i/240).toFixed(1)+","+yScale(run.samples[i][z]).toFixed(1)); chartLines[z].setAttribute("points",pts.join(" ")); }
+  const x=CH.x0+(CH.x1-CH.x0)*st.t/4; playhead.setAttribute("x1",x); playhead.setAttribute("x2",x);
+}
+
+// ---------- steps + matrix ----------
+function buildSteps(){
+  const list=steps();
+  $("steps").innerHTML = list.map((s,i)=>`<button type="button" data-i="${i}" aria-pressed="${i===st.idx}">${s.label}</button>`).join("");
+  for(const b of $("steps").children) b.addEventListener("click",()=>jump(+b.dataset.i));
+  $("restart").hidden = list.length<2;
+}
+function buildMatrix(){
+  const fresh=isFresh(), [,dT]=$("season").value.split("|").map(Number);
+  $("matTitle").textContent = `Через 4 часа: сравнение шагов · ${PRESETS[st.preset].name}`;
+  let h=`<thead><tr><th>Шаг</th><th>Улица, м³/ч</th><th>Давл., Па</th>${dT>0?"<th>Тепло, Вт</th>":""}${ZK.map(z=>`<th>${ZONES[z].name}</th>`).join("")}</tr></thead><tbody>`;
+  st.runs.forEach((r,i)=>{
+    const end=r.samples[r.samples.length-1], fr=r.fresh||r.samples;
+    h+=`<tr data-i="${i}"><td class="l">${r.step.label}</td><td class="c">${nf(r.fl.outdoorIn)}</td><td class="c">${(r.fl.P>=0?"+":"−")+nf(Math.abs(r.fl.P),1)}</td>${dT>0?`<td class="c">${nf(r.fl.heatW+r.fl.tionHeatW)}</td>`:""}`;
+    for(const z of ZK){ const v=end[z], tt=t90(fr,z); h+=`<td class="c" style="background:${roomColor(v)}" title="90% свежего: ${tt==null?"не достигнуто за 4 ч":"за "+hm(tt)}">${fresh?Math.round(v*100)+"%":Math.round(v)}</td>`; }
+    h+="</tr>";
+  });
+  $("matrix").innerHTML=h+"</tbody>";
+  for(const tr of $("matrix").querySelectorAll("tbody tr")) tr.addEventListener("click",()=>jump(+tr.dataset.i));
+}
+function jump(i){ st.idx=i; st.t=0; st.seqMode=false; st.playing=true; st.pauseLeft=0; parts=[]; updateStatic(); syncPlay(); }
+
+// ---------- frame loop ----------
+function concAt(run,t){ const x=clamp(t*60,0,240), i=Math.floor(x), j=Math.min(240,i+1), k=x-i, a=run.samples[i], b=run.samples[j]; const o={}; for(const z of ZK) o[z]=a[z]+(b[z]-a[z])*k; return o; }
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(.05,(now-last)/1000); last=now;
+  if(st.playing){
+    if(st.pauseLeft>0){ st.pauseLeft-=dt; if(st.pauseLeft<=0){ st.idx++; st.t=0; parts=[]; updateStatic(); } }
+    else{ st.t += dt*4/(+$("dur").value); if(st.t>=4){ st.t=4; if(st.seqMode && st.idx<st.runs.length-1) st.pauseLeft=1.2; else { st.playing=false; syncPlay(); } } }
+  }
+  const run=st.runs[st.idx], conc=concAt(run,st.t);
+  for(const z of ZK){ roomEls[z].setAttribute("fill",roomColor(conc[z])); valEls[z].textContent=fmtV(conc[z]); }
+  $("clock").textContent = `${hm(st.t)} / 4:00`;
+  drawChart();
+  stepParticles(st.playing&&st.pauseLeft<=0?dt:dt*0.35, run, conc);
+  requestAnimationFrame(loop);
+}
+function syncPlay(){ $("play").textContent = st.playing ? "Пауза" : (st.t>=4?"Повторить":"Пуск"); }
+
+// ---------- controls ----------
+function buildControls(){
+  $("presets").innerHTML = PRESETS.map((p,i)=>`<button type="button" role="tab" aria-selected="${i===st.preset}" data-i="${i}">${p.name}</button>`).join("");
+  for(const b of $("presets").children) b.addEventListener("click",()=>{ st.preset=+b.dataset.i; for(const x of $("presets").children) x.setAttribute("aria-selected",String(x===b)); $("customCard").hidden=!PRESETS[st.preset].custom; restart(); });
+  $("cWins").innerHTML = WZ.map(z=>`<label for="cw_${z}">Окно: ${ZONES[z].name.toLowerCase()}<select id="cw_${z}"><option value="0">Закрыто</option><option value="10">Проветрить, 10 мм</option><option value="20">Проветрить, 20 мм</option><option value="30">Проветрить, 30 мм</option><option value="tilt">Проветрить штатно</option><option value="open">Распахнуть</option></select></label>`).join("");
+  $("play").addEventListener("click",()=>{ if(!st.playing && st.t>=4){ st.t=0; parts=[]; } st.playing=!st.playing; syncPlay(); });
+  $("restart").addEventListener("click",restart);
+  const ids=["metric","people","bedDoors","undercut","wetDoors","tight","season","tilt","ac","cTion","cLite","cBath","cLaundry","cHood",...WZ.map(z=>"cw_"+z)];
+  for(const id of ids) $(id).addEventListener("input",()=>{
+    if(id==="people" && $("people").value!=="none" && isFresh()) $("metric").value="co2";
+    $("ucVal").textContent=$("undercut").value+" мм"; st.t=0; parts=[]; rebuild(); });
+}
+function restart(){ st.idx=0; st.t=0; st.seqMode=true; st.playing=true; st.pauseLeft=0; parts=[]; rebuild(); syncPlay(); }
+
+readColors();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ readColors(); buildMatrix(); updateStatic(); });
+new MutationObserver(()=>{ readColors(); buildMatrix(); updateStatic(); }).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+drawPlan(); buildControls(); rebuild(); syncPlay();
+requestAnimationFrame(t=>{ last=t; loop(t); });
+</script>
+</body>
+</html>
